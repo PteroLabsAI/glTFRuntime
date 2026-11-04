@@ -728,6 +728,10 @@ struct FglTFRuntimeMaterialsConfig
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "glTFRuntime")
 	bool bLoadMipMaps;
 
+	// Textures entries of one image and sampler in one role decode once, for an asset loaded under one config: exporters write an entry per material. The first entry's name and extras stand for them all.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "glTFRuntime")
+	bool bShareTexturesOfOneImage;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "glTFRuntime")
 	UMaterialInterface* ForceMaterial;
 
@@ -814,6 +818,7 @@ struct FglTFRuntimeMaterialsConfig
 		bSkipLoad = false;
 		VertexColorOnlyMaterial = nullptr;
 		bLoadMipMaps = false;
+		bShareTexturesOfOneImage = false;
 		ForceMaterial = nullptr;
 		bSkipPoints = true;
 		PointsTriangulationMode = EglTFRuntimePointsTriangulationMode::OpenedTetrahedronWithXYInUV1ZWInUV2;

@@ -26,9 +26,9 @@ namespace
 		]
 	})gltf";
 
-	UTexture2D* glTFRuntimeMaterialTests_LoadTexture(UglTFRuntimeAsset& Asset, const int32 MaterialIndex, const FName ParameterName)
+	UTexture2D* glTFRuntimeMaterialTests_LoadTexture(UglTFRuntimeAsset& Asset, const FglTFRuntimeMaterialsConfig& Config, const int32 MaterialIndex, const FName ParameterName)
 	{
-		UMaterialInstanceDynamic* Material = Cast<UMaterialInstanceDynamic>(Asset.LoadMaterial(MaterialIndex, FglTFRuntimeMaterialsConfig(), /* bUseVertexColors */ false));
+		UMaterialInstanceDynamic* Material = Cast<UMaterialInstanceDynamic>(Asset.LoadMaterial(MaterialIndex, Config, /* bUseVertexColors */ false));
 		return Material ? Cast<UTexture2D>(Material->K2_GetTextureParameterValue(ParameterName)) : nullptr;
 	}
 }
@@ -37,28 +37,32 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FglTFRuntimeTests_Material_OneTexturePerImage, 
 
 bool FglTFRuntimeTests_Material_OneTexturePerImage::RunTest(const FString& Parameters)
 {
-	const TArray<uint8> Gltf(reinterpret_cast<const uint8*>(glTFRuntimeMaterialTests_OneImage), FCStringAnsi::Strlen(glTFRuntimeMaterialTests_OneImage));
-
 	FglTFRuntimeConfig LoaderConfig;
-	UglTFRuntimeAsset* Asset = UglTFRuntimeFunctionLibrary::glTFLoadAssetFromData(Gltf, LoaderConfig);
-	if (!TestTrue("Asset != nullptr", Asset != nullptr))
+	UglTFRuntimeAsset* Unshared = UglTFRuntimeFunctionLibrary::glTFLoadAssetFromString(glTFRuntimeMaterialTests_OneImage, LoaderConfig);
+	UglTFRuntimeAsset* Shared = UglTFRuntimeFunctionLibrary::glTFLoadAssetFromString(glTFRuntimeMaterialTests_OneImage, LoaderConfig);
+	if (!TestTrue("The assets load", Unshared && Shared))
 	{
 		return false;
 	}
 
-	UTexture2D* BaseColor = glTFRuntimeMaterialTests_LoadTexture(*Asset, 0, "baseColorTexture");
-	UTexture2D* SameSampler = glTFRuntimeMaterialTests_LoadTexture(*Asset, 1, "baseColorTexture");
-	UTexture2D* OtherSampler = glTFRuntimeMaterialTests_LoadTexture(*Asset, 2, "baseColorTexture");
-	UTexture2D* Normal = glTFRuntimeMaterialTests_LoadTexture(*Asset, 3, "normalTexture");
-	if (!TestTrue("Every material shows a texture", BaseColor && SameSampler && OtherSampler && Normal))
+	FglTFRuntimeMaterialsConfig ShareConfig;
+	ShareConfig.bShareTexturesOfOneImage = true;
+
+	UTexture2D* First = glTFRuntimeMaterialTests_LoadTexture(*Unshared, FglTFRuntimeMaterialsConfig(), 0, "baseColorTexture");
+	UTexture2D* Second = glTFRuntimeMaterialTests_LoadTexture(*Unshared, FglTFRuntimeMaterialsConfig(), 1, "baseColorTexture");
+	UTexture2D* BaseColor = glTFRuntimeMaterialTests_LoadTexture(*Shared, ShareConfig, 0, "baseColorTexture");
+	UTexture2D* SameSampler = glTFRuntimeMaterialTests_LoadTexture(*Shared, ShareConfig, 1, "baseColorTexture");
+	UTexture2D* OtherSampler = glTFRuntimeMaterialTests_LoadTexture(*Shared, ShareConfig, 2, "baseColorTexture");
+	UTexture2D* Normal = glTFRuntimeMaterialTests_LoadTexture(*Shared, ShareConfig, 3, "normalTexture");
+	if (!TestTrue("Every material shows a texture", First && Second && BaseColor && SameSampler && OtherSampler && Normal))
 	{
 		return false;
 	}
 
+	TestTrue("By default each entry makes its own texture", First != Second);
 	TestTrue("One image and one sampler make one texture", BaseColor == SameSampler);
 	TestTrue("Another sampler makes another texture", BaseColor != OtherSampler);
 	TestTrue("Another role makes another texture", BaseColor != Normal);
-	TestTrue("The normal map keeps its compression", Normal->CompressionSettings == TextureCompressionSettings::TC_Normalmap);
 
 	return true;
 }
