@@ -2862,6 +2862,8 @@ protected:
 	TMap<int32, UTexture2D*> TexturesCache;
 #endif
 
+	TMap<TTuple<int64, int64, FString>, int64> FirstTextureOfImageInRole;
+
 	TMap<int32, TArray64<uint8>> BuffersCache;
 	TMap<int32, TArray64<uint8>> CompressedBufferViewsCache;
 	TMap<int32, int64> CompressedBufferViewsStridesCache;

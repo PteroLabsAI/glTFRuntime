@@ -5274,6 +5274,7 @@ void FglTFRuntimeParser::ClearCache()
 	SkeletonsCache.Empty();
 	SkeletalMeshesCache.Empty();
 	TexturesCache.Empty();
+	FirstTextureOfImageInRole.Empty();
 	MaterialsNameCache.Empty();
 	MetallicRoughnessMaterialsMap.Empty();
 	SpecularGlossinessMaterialsMap.Empty();
