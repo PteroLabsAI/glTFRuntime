@@ -173,6 +173,18 @@ UMaterialInterface* FglTFRuntimeParser::LoadMaterial_Internal(const int32 Index,
 					ImagesConfig.Compression = TextureCompressionSettings::TC_Normalmap;
 				}
 
+				if (MaterialsConfig.bShareTexturesOfOneImage && MaterialsConfig.TexturesOverrideMap.IsEmpty() && MaterialsConfig.ImagesOverrideMap.IsEmpty())
+				{
+					const TSharedPtr<FJsonObject> JsonTextureEntry = GetJsonObjectFromRootIndex("textures", TextureIndex);
+					int64 ImageIndex;
+					if (JsonTextureEntry && !JsonTextureEntry->HasField(TEXT("extensions")) && JsonTextureEntry->TryGetNumberField(TEXT("source"), ImageIndex))
+					{
+						int64 SamplerIndex = INDEX_NONE;
+						JsonTextureEntry->TryGetNumberField(TEXT("sampler"), SamplerIndex);
+						TextureIndex = FirstTextureOfImageInRole.FindOrAdd(MakeTuple(ImageIndex, SamplerIndex, ParamName), TextureIndex);
+					}
+				}
+
 				ParamTextureCache = LoadTexture(TextureIndex, ParamMips, sRGB, MaterialsConfig, Sampler);
 
 				return *JsonTextureObject;
